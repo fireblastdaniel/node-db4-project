@@ -5,8 +5,10 @@ module.exports = {
   getRecipeById,
   getIngredients,
   getIngredientsByRecipe,
+  getIngredientId,
   getSteps,
   getStepsByRecipe,
+  getShoppingList,
   insertRecipe,
   insertIngredient,
   insertStep,
@@ -37,12 +39,36 @@ function getIngredientsByRecipe(id) {
   return db('recipe_ingredients').where('recipeId', id);
 }
 
+function getIngredientId(ingredientName) {
+  return db('ingredients')
+    .where('ingredientName', ingredientName)
+    .first();
+}
+
 function getSteps() {
   return db('steps');
 }
 
 function getStepsByRecipe(id) {
   return db('steps').where('recipeId', id);
+}
+
+function getStepById(stepNumber, recipeId) {
+  return db('steps')
+    .where('stepNumber', stepNumber)
+    .andWhere('recipeId', recipeId);
+}
+
+function getShoppingList(recipeId) {
+  return db('recipe_ingredients')
+    .join(
+      'ingredients',
+      'recipe_ingredients.ingredientId',
+      '=',
+      'ingredients.id'
+    )
+    .select('ingredients.ingredientName', 'recipe_ingredients.quantity')
+    .where('recipe_ingredients.recipeId', recipeId);
 }
 
 function insertRecipe(recipe) {
@@ -62,7 +88,11 @@ function insertIngredient(ingredient) {
 }
 
 function insertStep(step) {
-  return db('steps').insert(step);
+  return db('steps')
+    .insert(step)
+    .then(() => {
+      return getStepById(step.stepNumber, step.recipeId);
+    });
 }
 
 function insertRecipeIngredient(recipeIngredient) {
